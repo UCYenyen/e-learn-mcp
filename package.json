@@ -1,0 +1,25 @@
+{
+  "name": "elearn-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Ciputra E-Learning (Moodle) with a persistent login",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.ts",
+    "signin": "node src/cli/login.ts",
+    "signout": "node src/cli/logout.ts",
+    "typecheck": "tsc"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
+  }
+}
