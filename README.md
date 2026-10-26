@@ -69,7 +69,7 @@ Requires Node ≥ 22.18, which runs the TypeScript directly; there is no build s
 | `elearn_submit_assignment` | Uploads file(s) to an assignment and submits for grading (or saves a draft). Asks for on-screen confirmation first |
 | `elearn_unsubmit_assignment` | Reverts a submitted assignment back to draft. Asks for on-screen confirmation first |
 
-Most tools are read-only. The two write tools — `elearn_submit_assignment` and `elearn_unsubmit_assignment` — are the only ones that change anything, and each pops a native macOS confirmation dialog you must approve before it uploads or reverts. Decline it and nothing happens. Times are shown in WIB.
+Most tools are read-only. The two write tools — `elearn_submit_assignment` and `elearn_unsubmit_assignment` — are the only ones that change anything, and each asks you to confirm before it uploads or reverts. On macOS that's a native dialog. On other systems (e.g. the server runs on Linux) it's a prompt shown by your MCP client through MCP elicitation, which Claude Code supports; the assistant can't answer it for you. Decline it, let it time out, or use a client without elicitation support, and nothing happens. Times are shown in WIB.
 
 ## Environment overrides
 

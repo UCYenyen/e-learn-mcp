@@ -45,8 +45,9 @@ export function registerSubmissionTools(server: McpServer): void {
       title: "Submit an assignment (asks for confirmation)",
       description:
         "Uploads one or more local files to an assignment and, by default, submits it for grading. " +
-        "A native confirmation dialog MUST be approved on the user's Mac before anything is uploaded or " +
-        "submitted; if it is declined or times out, nothing happens. Get assignId from elearn_list_assignments.",
+        "The user MUST approve a confirmation (a native dialog on macOS, otherwise a prompt in the MCP client) " +
+        "before anything is uploaded or submitted; if it is declined or times out, nothing happens. " +
+        "Get assignId from elearn_list_assignments.",
       inputSchema: {
         assignId: z.number().int().describe("assignId from elearn_list_assignments"),
         filePaths: z
@@ -85,17 +86,17 @@ export function registerSubmissionTools(server: McpServer): void {
         ? "UPLOAD and SUBMIT FOR GRADING"
         : "UPLOAD as a DRAFT (not submitted for grading)";
 
-      const approved = await requireApproval({
+      const approval = await requireApproval(server, {
         title: "E-Learn: confirm submission",
         confirmLabel: finalize ? "Submit" : "Save draft",
         summary: `${action} to assignment #${assignId}?`,
         detail: `${files.length} file(s):\n${fileList}\n\nCurrent status: ${before.status}${before.locked ? " (locked)" : ""}.`,
       });
-      if (!approved) {
+      if (!approval.approved) {
         return jsonResult({
           submitted: false,
           cancelled: true,
-          reason: "The confirmation dialog on the Mac was not approved. Nothing was uploaded.",
+          reason: `${approval.reason} Nothing was uploaded.`,
         });
       }
 
@@ -148,7 +149,8 @@ export function registerSubmissionTools(server: McpServer): void {
       title: "Unsubmit an assignment / revert to draft (asks for confirmation)",
       description:
         "Reverts your submitted assignment back to draft so it can be edited again (an 'unsubmit'). " +
-        "A native confirmation dialog MUST be approved on the user's Mac first; if it is declined, nothing changes. " +
+        "The user MUST approve a confirmation first (a native dialog on macOS, otherwise a prompt in the MCP client); " +
+        "if it is declined, nothing changes. " +
         "Whether a student may do this depends on the assignment's settings; E-Learn rejects it otherwise.",
       inputSchema: {
         assignId: z.number().int().describe("assignId from elearn_list_assignments"),
@@ -159,17 +161,17 @@ export function registerSubmissionTools(server: McpServer): void {
       const userId = await currentUserId();
       const before = await submissionSummary(assignId);
 
-      const approved = await requireApproval({
+      const approval = await requireApproval(server, {
         title: "E-Learn: confirm unsubmit",
         confirmLabel: "Unsubmit",
         summary: `Revert assignment #${assignId} back to draft (unsubmit)?`,
         detail: `Current status: ${before.status}${before.locked ? " (locked)" : ""}.`,
       });
-      if (!approved) {
+      if (!approval.approved) {
         return jsonResult({
           reverted: false,
           cancelled: true,
-          reason: "The confirmation dialog on the Mac was not approved. Nothing changed.",
+          reason: `${approval.reason} Nothing changed.`,
         });
       }
 

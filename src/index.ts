@@ -18,7 +18,8 @@ const server = new McpServer(
       "Access to the user's Ciputra E-Learning (Moodle, elearn.uc.ac.id): courses, materials, assignments, deadlines, " +
       "grades, notifications and forums. Login is persistent; if a tool says the token expired, call elearn_login. " +
       "Reading tools are safe to use freely. The two write tools, elearn_submit_assignment and elearn_unsubmit_assignment, " +
-      "each pop a native confirmation dialog on the user's Mac that the user must approve before anything changes; never " +
+      "each ask the user for confirmation (a native dialog on macOS, otherwise a prompt in the client) that the user " +
+      "must approve before anything changes; never " +
       "assume approval. Times are in WIB (UTC+7).",
   },
 );
