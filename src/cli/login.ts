@@ -2,12 +2,13 @@ import { createInterface } from "node:readline/promises";
 import { Writable } from "node:stream";
 import { SESSION_FILE } from "../config.ts";
 import { chromeTabLogin } from "../features/auth/chrome-tab-login.ts";
-import { completeLogin, cookieLogin, passwordLogin } from "../features/auth/login.ts";
+import { completeLogin, cookieLogin, passwordLogin, sessionTokenLogin } from "../features/auth/login.ts";
 import type { Session, TokenPair } from "../interfaces/session.ts";
 
-const USAGE = `Usage: pnpm signin [--cookie | --password]
-  (default)   Uses your already-open, logged-in E-Learn tab in Chrome.
-  --cookie    Paste the MoodleSession cookie from a browser where you're already logged in.
+const USAGE = `Usage: pnpm signin [--browser | --cookie | --password]
+  (default)   Asks for your E-Learn session token (MoodleSession cookie or mobile token).
+  --browser   Uses your already-open, logged-in E-Learn tab in Chrome.
+  --cookie    Paste the MoodleSession cookie from browser DevTools (Application → Cookies).
   --password  Use a Moodle username/password (not for Google-only accounts).`;
 
 let muted = false;
@@ -36,17 +37,30 @@ async function main(): Promise<void> {
   if (mode === "--help" || mode === "-h") {
     console.log(USAGE);
     return;
-  } else if (mode === "--cookie") {
-    pair = await cookieLogin(await ask("MoodleSession cookie value: ", true));
-    method = "cookie";
+  } else if (mode === "--cookie" || mode === "--token") {
+    const raw = await ask("E-Learn session token / MoodleSession cookie: ", true);
+    const res = await sessionTokenLogin(raw);
+    pair = res.pair;
+    method = res.method;
   } else if (mode === "--password") {
     const username = await ask("Username: ");
     pair = await passwordLogin(username, await ask("Password: ", true));
     method = "password";
-  } else if (mode === undefined) {
+  } else if (mode === "--browser") {
     console.log("Looking for a logged-in E-Learn tab in your browser...");
     pair = await chromeTabLogin(console.log);
     method = "browser";
+  } else if (mode === undefined) {
+    const raw = await ask("Enter E-Learn session token (MoodleSession cookie or web service token): ", true);
+    if (!raw) {
+      console.log("No token provided. Looking for a logged-in E-Learn tab in your browser...");
+      pair = await chromeTabLogin(console.log);
+      method = "browser";
+    } else {
+      const res = await sessionTokenLogin(raw);
+      pair = res.pair;
+      method = res.method;
+    }
   } else {
     console.log(USAGE);
     process.exitCode = 1;

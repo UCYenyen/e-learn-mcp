@@ -8,7 +8,7 @@ export const SessionSchema = z.object({
   username: z.string(),
   fullName: z.string(),
   createdAt: z.string(),
-  method: z.enum(["browser", "cookie", "password"]),
+  method: z.enum(["browser", "cookie", "password", "token"]),
 });
 
 export type Session = z.infer<typeof SessionSchema>;

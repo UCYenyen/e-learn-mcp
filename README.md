@@ -18,12 +18,13 @@ Moodle mobile tokens are valid for **12 weeks** by default, and they don't depen
 
 ```bash
 pnpm install
-pnpm signin             # uses your open, logged-in E-Learn tab in Chrome
+pnpm signin             # asks for your session token / MoodleSession cookie
 ```
 
 Other options:
 
 ```bash
+pnpm signin --browser   # uses your open, logged-in E-Learn tab in Chrome
 pnpm signin --cookie    # paste the MoodleSession cookie from DevTools → Application → Cookies
 pnpm signin --password  # only for accounts with a real Moodle password
 pnpm signout            # delete the saved token
@@ -31,7 +32,7 @@ pnpm signout            # delete the saved token
 
 `pnpm login` / `pnpm logout` are pnpm's own npm-registry commands, so this project uses `signin` / `signout` instead.
 
-You can also skip the terminal: ask Claude to call `elearn_login`.
+You can also skip the terminal: ask your assistant to call `elearn_login` with your session token.
 
 ### Register with Claude Code
 
@@ -55,7 +56,7 @@ Requires Node ≥ 22.18, which runs the TypeScript directly; there is no build s
 
 | Tool | What it does |
 | --- | --- |
-| `elearn_login` / `elearn_status` | Get a token from your open E-Learn tab / check the saved token |
+| `elearn_login` / `elearn_status` | Log in with session token (MoodleSession / mobile token) / check the saved token |
 | `elearn_list_courses` | Enrolled courses (in progress / past / future / all) |
 | `elearn_get_course_contents` | Sections, activities and file URLs of a course |
 | `elearn_read_page` | Text of a "page" activity |

@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { SiteInfoSchema } from "../../interfaces/moodle.ts";
 import { jsonResult } from "../../lib/format.ts";
 import { callMoodle } from "../moodle/client.ts";
-import { chromeTabLogin } from "./chrome-tab-login.ts";
-import { completeLogin } from "./login.ts";
+import { completeLogin, sessionTokenLogin } from "./login.ts";
 import { loadSession } from "./session-store.ts";
 
 export function registerAuthTools(server: McpServer): void {
@@ -12,12 +12,19 @@ export function registerAuthTools(server: McpServer): void {
     {
       title: "Log in to E-Learn",
       description:
-        "Gets a long-lived app token from the user's already-open, logged-in elearn.uc.ac.id tab in Chrome (no new window). " +
-        "Only needed the first time or when other tools report the token expired. If no logged-in tab exists it waits " +
-        "up to 5 minutes; tell the user to open E-Learn in Chrome and sign in with Google.",
+        "Logs in to E-Learn (elearn.uc.ac.id) using a session token (the MoodleSession cookie value from browser DevTools, or a Moodle mobile token). " +
+        "Saves the persistent token to ~/.config/elearn-mcp/session.json.",
+      inputSchema: {
+        sessionToken: z
+          .string()
+          .describe(
+            "The E-Learn session token: either your MoodleSession cookie value from DevTools (Application → Cookies) or a Moodle web service token.",
+          ),
+      },
     },
-    async () => {
-      const session = await completeLogin(await chromeTabLogin(() => undefined), "browser");
+    async ({ sessionToken }) => {
+      const { pair, method } = await sessionTokenLogin(sessionToken);
+      const session = await completeLogin(pair, method);
       return jsonResult({ loggedIn: true, fullName: session.fullName, username: session.username });
     },
   );

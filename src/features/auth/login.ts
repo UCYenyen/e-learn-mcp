@@ -44,3 +44,37 @@ export async function cookieLogin(cookie: string): Promise<TokenPair> {
   if (!pair) throw new Error("That cookie is not a logged-in E-Learn session (it may have expired).");
   return pair;
 }
+
+/**
+ * Accepts either a MoodleSession cookie value (exchanging it for an app token via launch.php)
+ * or a direct Moodle web service / mobile token.
+ */
+export async function sessionTokenLogin(
+  tokenOrCookie: string,
+): Promise<{ pair: TokenPair; method: Session["method"] }> {
+  const trimmed = tokenOrCookie.trim();
+  if (!trimmed) throw new Error("Session token cannot be empty.");
+
+  // 1. Attempt cookie exchange first (common case for web sessions)
+  try {
+    const pair = await cookieLogin(trimmed);
+    if (pair) return { pair, method: "cookie" };
+  } catch {
+    // Not a valid MoodleSession cookie, test as direct token below
+  }
+
+  // 2. Test if it is already a valid Moodle mobile / web service token
+  try {
+    const info = await callWithToken(trimmed, "core_webservice_get_site_info", {}, SiteInfoSchema);
+    if (info && info.userid) {
+      return { pair: { token: trimmed }, method: "token" };
+    }
+  } catch {
+    // Not a direct token either
+  }
+
+  throw new Error(
+    "Invalid session token or MoodleSession cookie. " +
+      "Make sure you are logged in to elearn.uc.ac.id, then copy the 'MoodleSession' cookie value from DevTools (Application → Cookies) or your Moodle mobile token.",
+  );
+}
