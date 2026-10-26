@@ -64,9 +64,11 @@ Requires Node ≥ 22.18, which runs the TypeScript directly; there is no build s
 | `elearn_get_grades` | Course totals, or every grade item in one course |
 | `elearn_get_notifications` | Recent notifications |
 | `elearn_get_forum_discussions` / `elearn_get_discussion` | Announcements and forum threads |
-| `elearn_download_file` | Saves a course file to `~/Downloads/elearn` and returns the path |
+| `elearn_download_file` | Saves a course file to `~/Downloads/University/Academics/elearn` and returns the path |
+| `elearn_submit_assignment` | Uploads file(s) to an assignment and submits for grading (or saves a draft). Asks for on-screen confirmation first |
+| `elearn_unsubmit_assignment` | Reverts a submitted assignment back to draft. Asks for on-screen confirmation first |
 
-Every tool is read-only. Nothing submits, posts, or marks anything on E-Learn. Times are shown in WIB.
+Most tools are read-only. The two write tools — `elearn_submit_assignment` and `elearn_unsubmit_assignment` — are the only ones that change anything, and each pops a native macOS confirmation dialog you must approve before it uploads or reverts. Decline it and nothing happens. Times are shown in WIB.
 
 ## Environment overrides
 

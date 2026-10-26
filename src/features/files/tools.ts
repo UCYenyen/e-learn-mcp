@@ -25,7 +25,7 @@ export function registerFileTools(server: McpServer): void {
     {
       title: "Download a course file",
       description:
-        "Downloads an E-Learn file (lecture slides, PDFs, assignment attachments) to the user's Downloads/elearn folder " +
+        "Downloads an E-Learn file (lecture slides, PDFs, assignment attachments) to the user's Downloads/University/Academics/elearn folder " +
         "and returns the local path. Small text files are also returned inline. Read PDFs/docs from the returned path.",
       inputSchema: {
         url: z.string().url().describe("A file URL from elearn_get_course_contents, an assignment, or a forum post"),
@@ -45,16 +45,23 @@ export function registerFileTools(server: McpServer): void {
 
       const res = await fetch(url);
       const mimetype = (res.headers.get("content-type") ?? "application/octet-stream").split(";")[0] ?? "";
+      const bytes = Buffer.from(await res.arrayBuffer());
+      // Errors come back as JSON, but so do real JSON files (e.g. .ipynb notebooks).
       if (mimetype === "application/json") {
-        const error = MoodleErrorSchema.safeParse(await res.json());
+        let json: unknown = null;
+        try {
+          json = JSON.parse(bytes.toString("utf8"));
+        } catch {
+          // Not valid JSON, so not a Moodle error either; save it as-is.
+        }
+        const error = MoodleErrorSchema.safeParse(json);
         if (error.success && error.data.errorcode === "invalidtoken") {
           throw new NotLoggedInError("Your E-Learn token was rejected; it has probably expired.");
         }
-        throw error.success ? new MoodleError(error.data.errorcode, error.data.message) : new Error("Unexpected JSON response.");
+        if (error.success) throw new MoodleError(error.data.errorcode, error.data.message);
       }
       if (!res.ok) throw new Error(`Download failed with HTTP ${res.status}.`);
 
-      const bytes = Buffer.from(await res.arrayBuffer());
       const filename = filenameFrom(res, url);
       await mkdir(DOWNLOAD_DIR, { recursive: true });
       const path = join(DOWNLOAD_DIR, filename);

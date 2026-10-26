@@ -9,6 +9,7 @@ import { registerFileTools } from "./features/files/tools.ts";
 import { registerForumTools } from "./features/forums/tools.ts";
 import { registerGradeTools } from "./features/grades/tools.ts";
 import { registerNotificationTools } from "./features/notifications/tools.ts";
+import { registerSubmissionTools } from "./features/submissions/tools.ts";
 
 const server = new McpServer(
   { name: "elearn", version: "1.0.0" },
@@ -16,13 +17,16 @@ const server = new McpServer(
     instructions:
       "Access to the user's Ciputra E-Learning (Moodle, elearn.uc.ac.id): courses, materials, assignments, deadlines, " +
       "grades, notifications and forums. Login is persistent; if a tool says the token expired, call elearn_login. " +
-      "Times are in WIB (UTC+7).",
+      "Reading tools are safe to use freely. The two write tools, elearn_submit_assignment and elearn_unsubmit_assignment, " +
+      "each pop a native confirmation dialog on the user's Mac that the user must approve before anything changes; never " +
+      "assume approval. Times are in WIB (UTC+7).",
   },
 );
 
 registerAuthTools(server);
 registerCourseTools(server);
 registerAssignmentTools(server);
+registerSubmissionTools(server);
 registerCalendarTools(server);
 registerGradeTools(server);
 registerNotificationTools(server);

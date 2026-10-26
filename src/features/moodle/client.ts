@@ -1,4 +1,6 @@
-import type { z } from "zod";
+import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
+import { z } from "zod";
 import { SITE_URL } from "../../config.ts";
 import { MoodleErrorSchema } from "../../interfaces/moodle.ts";
 import { loadSession } from "../auth/session-store.ts";
@@ -90,4 +92,61 @@ export async function currentUserId(): Promise<number> {
   const session = await loadSession();
   if (!session) throw new NotLoggedInError("You are not logged in to E-Learn yet.");
   return session.userId;
+}
+
+/** One entry of the array that webservice/upload.php returns on success. */
+const UploadedFileSchema = z.object({
+  filename: z.string(),
+  itemid: z.number(),
+  filepath: z.string().optional(),
+});
+const UploadResponseSchema = z.array(UploadedFileSchema);
+
+/**
+ * Uploads local files into the user's private draft file area via
+ * webservice/upload.php and returns the draft `itemid` to attach to a submission.
+ * All files go in one request so they share one itemid. The token is only ever
+ * sent to the configured E-Learn host.
+ */
+export async function uploadToDraftArea(
+  filePaths: string[],
+): Promise<{ itemid: number; files: { filename: string; bytes: number }[] }> {
+  const session = await loadSession();
+  if (!session) throw new NotLoggedInError("You are not logged in to E-Learn yet.");
+  if (filePaths.length === 0) throw new Error("No files to upload.");
+
+  const form = new FormData();
+  const files: { filename: string; bytes: number }[] = [];
+  for (let i = 0; i < filePaths.length; i++) {
+    const path = filePaths[i]!;
+    const bytes = await readFile(path);
+    const name = basename(path);
+    form.append(`file_${i}`, new Blob([bytes]), name);
+    files.push({ filename: name, bytes: bytes.length });
+  }
+
+  const res = await fetch(`${SITE_URL}/webservice/upload.php?token=${encodeURIComponent(session.token)}`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error(`E-Learn upload failed with HTTP ${res.status}.`);
+  const json: unknown = await res.json();
+
+  // upload.php reports errors as a Moodle exception, or as a bare { error } object.
+  const moodleError = MoodleErrorSchema.safeParse(json);
+  if (moodleError.success) {
+    if (TOKEN_ERRORS.has(moodleError.data.errorcode)) {
+      throw new NotLoggedInError("Your E-Learn token was rejected during upload; it has probably expired.");
+    }
+    throw new MoodleError(moodleError.data.errorcode, moodleError.data.message);
+  }
+  if (json && typeof json === "object" && "error" in json) {
+    throw new Error(`E-Learn upload error: ${String((json as { error: unknown }).error)}`);
+  }
+
+  const parsed = UploadResponseSchema.safeParse(json);
+  if (!parsed.success || parsed.data.length === 0) {
+    throw new Error(`Unexpected upload response: ${JSON.stringify(json).slice(0, 300)}`);
+  }
+  return { itemid: parsed.data[0]!.itemid, files };
 }
