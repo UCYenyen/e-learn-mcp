@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const SITE_URL = (process.env.ELEARN_SITE_URL ?? "https://elearn.uc.ac.id").replace(/\/+$/, "");
 export const SITE_HOST = new URL(SITE_URL).host;
@@ -16,3 +18,22 @@ export const DOWNLOAD_DIR = process.env.ELEARN_DOWNLOAD_DIR ?? join(homedir(), "
 
 /** Universitas Ciputra is in WIB (UTC+7, no DST). */
 export const TIMEZONE = "Asia/Jakarta";
+
+/** Project root (one level above src/). */
+export const PROJECT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * When true, elearn_submit_assignment and elearn_unsubmit_assignment skip the confirmation
+ * (needed where it cannot be shown, e.g. a Linux server whose client times out elicitation).
+ * Set "autoApproveSubmissions": true in elearn.config.json at the project root, or
+ * ELEARN_AUTO_APPROVE_SUBMISSIONS=1. Read on every call, so toggling the file needs no restart.
+ */
+export function autoApproveSubmissions(): boolean {
+  if (process.env.ELEARN_AUTO_APPROVE_SUBMISSIONS === "1") return true;
+  try {
+    const cfg = JSON.parse(readFileSync(join(PROJECT_DIR, "elearn.config.json"), "utf8")) as { autoApproveSubmissions?: unknown };
+    return cfg.autoApproveSubmissions === true;
+  } catch {
+    return false;
+  }
+}

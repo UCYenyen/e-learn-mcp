@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { autoApproveSubmissions } from "../../config.ts";
 
 export interface ApprovalRequest {
   /** Dialog window title. */
@@ -37,13 +38,15 @@ function approvalMessage(req: ApprovalRequest): string {
  * Asks the human to confirm before any write to E-Learn happens. Returns approved ONLY
  * on an explicit confirm. A cancel, the Escape key, a timeout, or any failure to ask all
  * count as "no", so nothing is ever submitted or unsubmitted without a deliberate human
- * answer. This gate is intentionally not bypassable from the tool arguments.
+ * answer. This gate is intentionally not bypassable from the tool arguments; only the
+ * owner can turn it off with autoApproveSubmissions (see config.ts).
  *
  * On macOS it shows a native dialog. Elsewhere (e.g. the server runs on Linux) it asks
  * through MCP elicitation, which the client shows to the user directly; the model
  * cannot answer it on the user's behalf.
  */
 export function requireApproval(server: McpServer, req: ApprovalRequest): Promise<ApprovalOutcome> {
+  if (autoApproveSubmissions()) return Promise.resolve({ approved: true });
   return process.platform === "darwin" ? macDialogApproval(req) : elicitationApproval(server, req);
 }
 
